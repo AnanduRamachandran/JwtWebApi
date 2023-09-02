@@ -2,6 +2,7 @@
 using System.Security.Claims;
 using System.Security.Cryptography;
 using JwtWebApi.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.IdentityModel.Tokens;
 
@@ -40,18 +41,25 @@ namespace JwtWebApi.Controllers
             }
             if(!VerifyPasswordHash(request.Password, user.PasswordHash, user.PasswordSalt))
             {
-                return BadRequest("Wrong passowrd");
+                return BadRequest("Wrong password");
             }
 
             string token = CreateToken(user);
             return Ok(token);
         }
 
+        [HttpGet("TestAuthorize"), Authorize(Roles = "Admin")]
+        public async Task<ActionResult<String>> TestGet(string request)
+        {
+            return Ok("Authorized user :)");
+        }
+
         private string CreateToken(User user)
         {
             List<Claim> claims = new List<Claim>()
             {
-                new Claim(ClaimTypes.Name, user.Username)
+                new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.Role, "Admin")
             };
 
             var key = new SymmetricSecurityKey(
