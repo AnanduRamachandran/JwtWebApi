@@ -71,12 +71,12 @@ namespace JwtWebApi.Controllers
         public async Task<ActionResult<string>> RefreshToken()
         {
             var refreshToken = Request.Cookies["refreshToken"];
-            if (!user.RefreshToken.Equals(refreshToken))
+            if (!user.RefreshToken.Token.Equals(refreshToken))
             {
                 return Unauthorized("Invalid Refresh Token");
 
             }
-            else if (user.TokenExpires < DateTime.Now)
+            else if (user.RefreshToken.Expires < DateTime.Now)
             {
                 return Unauthorized("Token expired");
             }
@@ -149,9 +149,7 @@ namespace JwtWebApi.Controllers
             };
 
             Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
-            user.RefreshToken = newRefreshToken.Token;
-            user.TokenCreated = newRefreshToken.Created;
-            user.TokenExpires = newRefreshToken.Expires;
+            user.RefreshToken = newRefreshToken;
         }
     }
 }
