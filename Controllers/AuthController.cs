@@ -45,6 +45,10 @@ namespace JwtWebApi.Controllers
             }
 
             string token = CreateToken(user);
+
+            var refreshToken = GetRefreshToken();
+            SetRefreshToken(refreshToken);
+
             return Ok(token);
         }
 
@@ -63,6 +67,26 @@ namespace JwtWebApi.Controllers
             return Ok(new {userName, userName2, role});
         }
 
+        [HttpPost("refresh-token")]
+        public async Task<ActionResult<string>> RefreshToken()
+        {
+            var refreshToken = Request.Cookies["refreshToken"];
+            if (!user.RefreshToken.Equals(refreshToken))
+            {
+                return Unauthorized("Invalid Refresh Token");
+
+            }
+            else if (user.TokenExpires < DateTime.Now)
+            {
+                return Unauthorized("Token expired");
+            }
+
+            string token = CreateToken(user);
+            var newRefreshToken = GetRefreshToken();
+            SetRefreshToken(newRefreshToken);
+
+            return Ok(token);
+        }
         private string CreateToken(User user)
         {
             List<Claim> claims = new List<Claim>()
@@ -102,6 +126,32 @@ namespace JwtWebApi.Controllers
                 var computedHash = hmac.ComputeHash(System.Text.Encoding.UTF8.GetBytes(password));
                 return computedHash.SequenceEqual(passwordHash);
             }
+        }
+
+        private RefreshToken GetRefreshToken()
+        {
+            var refreshToken = new RefreshToken()
+            {
+                Token = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64)),
+                Expires = DateTime.Now.AddDays(7),
+                Created = DateTime.Now
+            };
+
+            return refreshToken;
+        }
+
+        private void SetRefreshToken(RefreshToken newRefreshToken)
+        {
+            var cookieOptions = new CookieOptions
+            {
+                HttpOnly = true,
+                Expires = newRefreshToken.Expires
+            };
+
+            Response.Cookies.Append("refreshToken", newRefreshToken.Token, cookieOptions);
+            user.RefreshToken = newRefreshToken.Token;
+            user.TokenCreated = newRefreshToken.Created;
+            user.TokenExpires = newRefreshToken.Expires;
         }
     }
 }
