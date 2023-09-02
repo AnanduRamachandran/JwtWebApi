@@ -54,6 +54,15 @@ namespace JwtWebApi.Controllers
             return Ok("Authorized user :)");
         }
 
+        [HttpGet, Authorize]
+        public ActionResult<string> GetMe()
+        {
+            var userName = User.Identity.Name;
+            var userName2 = User.FindFirstValue(ClaimTypes.Name);
+            var role = User.FindFirstValue(ClaimTypes.Role);
+            return Ok(new {userName, userName2, role});
+        }
+
         private string CreateToken(User user)
         {
             List<Claim> claims = new List<Claim>()
@@ -64,6 +73,7 @@ namespace JwtWebApi.Controllers
 
             var key = new SymmetricSecurityKey(
                 System.Text.Encoding.UTF8.GetBytes(_configuration.GetSection("AppSettings:Token").Value));
+
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
             var token = new JwtSecurityToken(
